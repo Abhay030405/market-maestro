@@ -1,0 +1,95 @@
+# ----------------------------
+# 🐍 Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+*.log
+*.tmp
+*.out
+.DS_Store
+
+# ----------------------------
+# 🧠 Virtual Environments
+# ----------------------------
+venv/
+.env/
+env/
+.venv/
+ENV/
+env.bak/
+
+# ----------------------------
+# 🧪 Jupyter & Notebooks
+# ----------------------------
+.ipynb_checkpoints
+.notebook_metadata.json
+*.nbconvert.ipynb
+
+# ----------------------------
+# ⚙️ Environment & Config
+# ----------------------------
+.env
+.env.*
+config.yaml
+config.json
+secrets.json
+
+# ----------------------------
+# 📊 Data & Cache
+# ----------------------------
+data/
+datasets/
+cache/
+__cache__/
+*.csv
+*.parquet
+*.pkl
+*.db
+*.sqlite3
+
+# ----------------------------
+# 🧩 LangChain / LangGraph
+# ----------------------------
+langchain_storage/
+langchain_cache/
+logs/
+outputs/
+llm_runs/
+*.jsonl
+
+# ----------------------------
+# 🌐 FastAPI / Streamlit
+# ----------------------------
+*.db.sqlite3
+*.db
+frontend/__pycache__/
+backend/__pycache__/
+.streamlit/secrets.toml
+
+# ----------------------------
+# 🧰 IDE / OS Files
+# ----------------------------
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+Thumbs.db
+.DS_Store
+
+# ----------------------------
+# 📦 Misc
+# ----------------------------
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.swp
+*.orig
