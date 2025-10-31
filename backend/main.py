@@ -19,6 +19,7 @@ from backend.utils import (
     risk_analyzer,
     cache_manager
 )
+from backend.agents import orchestrator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -493,6 +494,123 @@ async def clear_cache():
         }
     except Exception as e:
         logger.error(f"Error clearing cache: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= AI AGENT ENDPOINTS (PHASE 2) =============
+
+class AnalyzeStockRequest(BaseModel):
+    """Request model for stock analysis"""
+    symbol: str = Field(..., description="Stock ticker symbol")
+    user_goal: Optional[str] = Field(None, description="Investment goal or objective")
+    start_date: Optional[str] = Field(None, description="Start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="End date (YYYY-MM-DD)")
+
+
+class AnalyzePortfolioRequest(BaseModel):
+    """Request model for portfolio analysis"""
+    symbols: List[str] = Field(..., description="List of stock symbols")
+    weights: Optional[List[float]] = Field(None, description="Portfolio weights (optional)")
+    user_goal: Optional[str] = Field(None, description="Investment goal")
+    start_date: Optional[str] = Field(None, description="Start date")
+    end_date: Optional[str] = Field(None, description="End date")
+    optimization_method: str = Field("equal_weight", description="Optimization method")
+
+
+@app.post("/analyze/stock")
+async def analyze_stock(request: AnalyzeStockRequest):
+    """
+    Comprehensive AI-powered stock analysis
+    Uses all agents to provide complete analysis and recommendations
+    
+    Args:
+        request: AnalyzeStockRequest with symbol and parameters
+    
+    Returns:
+        Comprehensive analysis report
+    """
+    try:
+        logger.info(f"AI Analysis requested for {request.symbol}")
+        
+        # Check cache
+        cache_key = f"analyze_stock_{request.symbol}_{request.start_date}_{request.end_date}"
+        cached_result = cache_manager.get(cache_key)
+        
+        if cached_result:
+            logger.info(f"Returning cached analysis for {request.symbol}")
+            return cached_result
+        
+        # Run orchestrator
+        result = orchestrator.analyze_stock(
+            symbol=request.symbol,
+            user_goal=request.user_goal,
+            start_date=request.start_date,
+            end_date=request.end_date
+        )
+        
+        if result.get('status') == 'error':
+            raise HTTPException(status_code=500, detail=result.get('message', 'Analysis failed'))
+        
+        # Cache for 30 minutes
+        cache_manager.set(cache_key, result, ttl=1800)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in analyze_stock: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/analyze/portfolio")
+async def analyze_portfolio(request: AnalyzePortfolioRequest):
+    """
+    Comprehensive AI-powered portfolio analysis
+    Uses all agents to provide portfolio optimization and analysis
+    
+    Args:
+        request: AnalyzePortfolioRequest with symbols and parameters
+    
+    Returns:
+        Comprehensive portfolio analysis report
+    """
+    try:
+        logger.info(f"AI Portfolio Analysis requested for {len(request.symbols)} assets")
+        
+        # Validate weights if provided
+        if request.weights:
+            if len(request.symbols) != len(request.weights):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Number of symbols must match number of weights"
+                )
+            
+            if abs(sum(request.weights) - 1.0) > 0.01:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Weights must sum to 1.0"
+                )
+        
+        # Run orchestrator
+        result = orchestrator.analyze_portfolio(
+            symbols=request.symbols,
+            weights=request.weights,
+            user_goal=request.user_goal,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            optimization_method=request.optimization_method
+        )
+        
+        if result.get('status') == 'error':
+            raise HTTPException(status_code=500, detail=result.get('message', 'Analysis failed'))
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in analyze_portfolio: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
