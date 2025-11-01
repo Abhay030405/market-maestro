@@ -20,6 +20,7 @@ from backend.utils import (
     cache_manager
 )
 from backend.agents import orchestrator
+from backend.langchain_core import query_processor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -611,6 +612,60 @@ async def analyze_portfolio(request: AnalyzePortfolioRequest):
         raise
     except Exception as e:
         logger.error(f"Error in analyze_portfolio: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= NATURAL LANGUAGE QUERY ENDPOINT (PHASE 3) =============
+
+class NaturalQueryRequest(BaseModel):
+    """Request model for natural language queries"""
+    query: str = Field(..., description="Natural language query")
+    context: Optional[Dict] = Field(None, description="Additional context")
+
+
+@app.post("/query")
+async def natural_language_query(request: NaturalQueryRequest):
+    """
+    Process natural language queries using AI
+    
+    Examples:
+    - "Analyze Apple stock for long-term investment"
+    - "Compare TCS and Infosys for growth potential"
+    - "Optimize portfolio with MSFT, GOOGL, AAPL"
+    - "What's the latest news on Tesla?"
+    
+    Args:
+        request: NaturalQueryRequest with natural language query
+    
+    Returns:
+        Comprehensive analysis with natural language response
+    """
+    try:
+        logger.info(f"Natural language query: {request.query}")
+        
+        # Check cache
+        cache_key = f"nlp_query_{request.query.lower().replace(' ', '_')[:50]}"
+        cached_result = cache_manager.get(cache_key)
+        
+        if cached_result:
+            logger.info("Returning cached NLP query result")
+            return cached_result
+        
+        # Process query
+        result = query_processor.process_query(request.query)
+        
+        if result.get('status') == 'error':
+            raise HTTPException(status_code=500, detail=result.get('message', 'Query processing failed'))
+        
+        # Cache for 30 minutes
+        cache_manager.set(cache_key, result, ttl=1800)
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in natural_language_query: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
